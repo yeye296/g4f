@@ -2,7 +2,7 @@ name: G4F 自动续期
 
 on:
   schedule:
-    - cron: '40 * * * *'      # 每小时第40分钟执行
+    - cron: '7,37 * * * *'    # 每30分钟一次（第7分和第37分）
   workflow_dispatch:
 
 permissions:
