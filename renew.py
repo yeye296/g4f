@@ -148,15 +148,22 @@ def main():
 
     try:
         co = ChromiumOptions()
+        co.set_browser_path('/usr/bin/google-chrome-stable')
         co.set_argument('--no-sandbox')
         co.set_argument('--disable-dev-shm-usage')
         co.set_argument('--disable-gpu')
-        co.set_argument('--headless=new')
+        co.set_argument('--disable-setuid-sandbox')
+        co.set_argument('--disable-software-rasterizer')
+        co.set_argument('--disable-extensions')
+        co.set_argument('--no-first-run')
+        co.set_argument('--no-default-browser-check')
+        co.set_argument('--disable-popup-blocking')
         co.set_argument('--window-size=1280,720')
         co.set_argument('--log-level=3')
         co.set_argument('--silent')
+        co.set_user_data_path(tempfile.mkdtemp())
         co.auto_port()
-        co.headless(True)
+        co.headless(False)
         page = ChromiumPage(co)
 
         # 反指纹注入
