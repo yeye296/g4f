@@ -104,27 +104,28 @@ def do_renew(page):
 
     # 3. 等响应
     time.sleep(5)
+    page_text = (page.html or "").lower()
     page.get_screenshot(path="screenshots/2_result.png")
 
     # 4. 检查结果
-    page_text = (page.html or "").lower()
-    if "the server has been renewed" in page_text or "successfully" in page_text or "renewed" in page_text:
-        log("续期大成功！")
+    # 成功标志："3 hours added" / "thanks for supporting"
+    if "3 hours added" in page_text or "thanks for supporting" in page_text:
+        log("续期成功！+3 小时")
         caption = build_notification(success=True)
         send_tg(caption, "screenshots/2_result.png")
         return True
 
-    # 检查 flash 消息
-    flash = page.ele('.flash-success', timeout=2)
-    if flash:
-        log(f"成功提示: {flash.text.strip()}")
+    # 冷却提示：You extended this server recently（之前的投票已续期，仍然算成功）
+    if "you extended this server recently" in page_text:
+        log("冷却中，服务器已在之前被续期，无需重复操作")
         caption = build_notification(success=True)
         send_tg(caption, "screenshots/2_result.png")
         return True
 
-    flash_err = page.ele('.flash-error', timeout=1)
-    if flash_err:
-        err_text = flash_err.text.strip()
+    # 失败提示
+    if ".flash-error" in page_text or "something went wrong" in page_text:
+        flash_err = page.ele('.flash-error', timeout=1)
+        err_text = flash_err.text.strip() if flash_err else "未知错误"
         log(f"失败提示: {err_text}", "WARN")
         caption = build_notification(success=False, failure_reason=err_text)
         send_tg(caption, "screenshots/2_result.png")
