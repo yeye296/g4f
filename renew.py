@@ -151,11 +151,12 @@ def main():
         co.set_argument('--no-sandbox')
         co.set_argument('--disable-dev-shm-usage')
         co.set_argument('--disable-gpu')
+        co.set_argument('--headless=new')
         co.set_argument('--window-size=1280,720')
         co.set_argument('--log-level=3')
         co.set_argument('--silent')
         co.auto_port()
-        co.headless(False)
+        co.headless(True)
         page = ChromiumPage(co)
 
         # 反指纹注入
