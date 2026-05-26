@@ -41,29 +41,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install seleniumbase xvfbwrapper requests
 
-      - name: 安装并启用 Cloudflare WARP
+      - name: 启用 WARP 网络
+        uses: fscarmen/warp-on-actions@v1.3
+        with:
+          stack: dual
+          mode: client
+
+      - name: 修复 DNS 并验证网络
         run: |
-          echo "[INFO] 停用 systemd-resolved..."
+          echo "[INFO] 停用 systemd-resolved，设置公共 DNS..."
           sudo systemctl stop systemd-resolved 2>/dev/null || true
           sudo systemctl disable systemd-resolved 2>/dev/null || true
           sudo rm -f /etc/resolv.conf
           echo -e "nameserver 1.1.1.1\nnameserver 8.8.8.8\nnameserver 1.0.0.1" | sudo tee /etc/resolv.conf
           sleep 2
 
-          echo "[INFO] 安装 Cloudflare WARP..."
-          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
-          sudo apt-get update -qq
-          sudo apt-get install -y cloudflare-warp
-
-          echo "[INFO] 注册并连接 WARP..."
-          sudo warp-cli register
-          sudo warp-cli set-mode warp+doh
-          sudo warp-cli connect
-          sleep 5
-
           echo "[INFO] DNS 测试:"
           nslookup g4f.gg 1.1.1.1 || echo "[WARN] 解析失败"
+
           echo ""
           echo "[INFO] 当前出口 IP:"
           curl -s --max-time 10 https://api.ipify.org && echo
@@ -84,4 +79,14 @@ jobs:
           path: screenshots/*.png
           retention-days: 7
           if-no-files-found: ignore
+
+      - name: 清理历史运行记录
+        if: always()
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          delete_workflow_pattern: ${{ github.workflow }}
+          retain_days: 0
+          keep_minimum_runs: 2
 
