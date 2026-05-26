@@ -42,7 +42,7 @@ jobs:
           pip install seleniumbase xvfbwrapper requests
 
       - name: 启用 WARP 网络
-        uses: fscarmen/warp-on-actions@v1.3
+        uses: fscarmen/warp-on-actions@latest
         with:
           stack: dual
           mode: client
