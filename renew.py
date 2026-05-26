@@ -1,4 +1,4 @@
-import os, sys, time, random, re
+import os, sys, time, random, re, subprocess
 from datetime import datetime
 import requests
 from xvfbwrapper import Xvfb
@@ -83,6 +83,29 @@ def send_tg(caption, photo_path=None):
                 log("Telegram 通知已发送")
         except Exception as e:
             log(f"Telegram 通知异常: {e}", "ERROR")
+
+
+# ==========================================
+# WARP IP 切换
+# ==========================================
+def rotate_warp_ip():
+    """断开并重连 WARP 获取新出口 IP"""
+    log("正在切换 WARP IP...")
+    try:
+        subprocess.run(["warp-cli", "disconnect"], capture_output=True, timeout=15)
+        time.sleep(2)
+        subprocess.run(["warp-cli", "connect"], capture_output=True, timeout=30)
+        time.sleep(5)
+        result = subprocess.run(
+            ["curl", "-s", "--max-time", "10", "https://api.ipify.org"],
+            capture_output=True, text=True, timeout=15
+        )
+        new_ip = result.stdout.strip() if result.returncode == 0 else "未知"
+        log(f"WARP 新 IP: {new_ip}")
+        return True
+    except Exception as e:
+        log(f"WARP IP 切换失败: {e}", "WARN")
+        return False
 
 
 # ==========================================
@@ -260,11 +283,29 @@ def do_renew(sb):
     expiry = parse_expiry_from_page(page_source)
 
     # 检查冷却状态（用 DOM 检测而非字符串匹配，CSS 里的 .vote-cooldown{} 会误判）
-    if sb.is_element_present(".vote-cooldown") or "you extended this server recently" in page_source.lower():
-        log("冷却中，服务器已在之前被续期，无需重复操作")
-        sb.save_screenshot("screenshots/2_result.png")
-        send_tg(build_notification(success=True, expiry=expiry), "screenshots/2_result.png")
-        return True
+    is_cooldown = sb.is_element_present(".vote-cooldown") or "you extended this server recently" in page_source.lower()
+
+    if is_cooldown:
+        log("检测到冷却状态，尝试切换 WARP IP 重试...")
+        if rotate_warp_ip():
+            log("WARP IP 已切换，重新加载页面...")
+            sb.uc_open_with_reconnect(TARGET_URL, reconnect_time=8)
+            time.sleep(random.uniform(5, 8))
+            if wait_for_page_ready(sb):
+                page_source = sb.get_page_source() or ""
+                if sb.is_element_present(".vote-cooldown") or "you extended this server recently" in page_source.lower():
+                    log("切换 IP 后仍为冷却状态，服务器冷却中")
+                else:
+                    log("切换 IP 后冷却消失，继续续期流程")
+                    # 不 return，继续往下走续期流程
+                    is_cooldown = False
+
+        if is_cooldown:
+            log("冷却中，服务器已在之前被续期，无需重复操作")
+            sb.save_screenshot("screenshots/2_result.png")
+            expiry = parse_expiry_from_page(sb.get_page_source() or "")
+            send_tg(build_notification(success=True, expiry=expiry), "screenshots/2_result.png")
+            return True
 
     # 1. 填入玩家名
     log(f"填入玩家名: {MC_USERNAME}")
