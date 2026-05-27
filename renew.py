@@ -282,6 +282,13 @@ def do_renew(sb):
     page_source = sb.get_page_source() or ""
     expiry = parse_expiry_from_page(page_source)
 
+    # 检查已达最大计时器
+    if "already at the maximum timer" in page_source.lower():
+        log("服务器已达最大计时器上限，无需续期")
+        sb.save_screenshot("screenshots/2_result.png")
+        send_tg(build_notification(success=True, expiry=expiry), "screenshots/2_result.png")
+        return True
+
     # 检查冷却状态（用 DOM 检测而非字符串匹配，CSS 里的 .vote-cooldown{} 会误判）
     is_cooldown = sb.is_element_present(".vote-cooldown") or "you extended this server recently" in page_source.lower()
 
@@ -344,6 +351,12 @@ def do_renew(sb):
 
     if "3 hours added" in page_text_lower or "thanks for supporting" in page_text_lower:
         log("续期成功！+3 小时")
+        expiry = parse_expiry_from_page(page_source)
+        send_tg(build_notification(success=True, expiry=expiry), "screenshots/2_result.png")
+        return True
+
+    if "already at the maximum timer" in page_text_lower:
+        log("服务器已达最大计时器上限，无需续期")
         expiry = parse_expiry_from_page(page_source)
         send_tg(build_notification(success=True, expiry=expiry), "screenshots/2_result.png")
         return True
