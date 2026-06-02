@@ -7,8 +7,8 @@ from seleniumbase import SB
 # ==========================================
 # 配置区域
 # ==========================================
-TARGET_URL = "https://g4f.gg/fzero"
-MC_USERNAME = "fzero"
+TARGET_URL = "https://g4f.gg/1e6f284d"
+MC_USERNAME = "1e6f284d"
 TG_TOKEN = os.getenv("TG_TOKEN", "")
 TG_CHAT_ID = os.getenv("TG_CHAT_ID", "")
 
