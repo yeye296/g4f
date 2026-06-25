@@ -1,11 +1,6 @@
 name: G4F 自动续期
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'renew.py'
-      - '.github/workflows/gaming4free.yml'
   schedule:
     - cron: '3 * * * *'       # 每小时第3分
     - cron: '33 * * * *'      # 每小时第33分
