@@ -63,7 +63,7 @@ jobs:
           echo ""
           
           # 启动虚拟桌面并运行无敌的 Python 打码脚本
-          xvfb-run -a python renew.py
+          xvfb-run -a python renew2.py
           
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
